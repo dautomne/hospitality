@@ -150,7 +150,8 @@ public class DateRange
     @Override
     public int hashCode()
     {
-        return Objects.hashCode( startDate, endDate, days );
+        return Objects.hashCode( startDate, endDate, days, includeMonday, includeTuesday, includeWednesday,
+                                 includeThursday, includeFriday, includeSaturday, includeSunday );
     }
 
     @Override
@@ -166,19 +167,30 @@ public class DateRange
         }
         final DateRange other = (DateRange) obj;
         return Objects.equal( this.startDate, other.startDate ) && Objects.equal( this.endDate, other.endDate )
-            && Objects.equal( this.days, other.days );
+            && Objects.equal( this.days, other.days ) && Objects.equal( this.includeMonday, other.includeMonday )
+            && Objects.equal( this.includeTuesday, other.includeTuesday ) && Objects.equal( this.includeWednesday,
+                                                                                            other.includeWednesday )
+            && Objects.equal( this.includeThursday, other.includeThursday ) && Objects.equal( this.includeFriday,
+                                                                                              other.includeFriday )
+            && Objects.equal( this.includeSaturday, other.includeSaturday ) && Objects.equal( this.includeSunday,
+                                                                                              other.includeSunday );
     }
 
     @Override
     public String toString()
     {
         return Objects.toStringHelper( this ).add( "startDate", startDate ).add( "endDate", endDate ).add( "days",
-                                                                                                           days ).toString();
+                                                                                                           days ).add(
+            "includeMonday", includeMonday ).add( "includeTuesday", includeTuesday ).add( "includeWednesday",
+                                                                                          includeWednesday ).add(
+            "includeThursday", includeThursday ).add( "includeFriday", includeFriday ).add( "includeSaturday",
+                                                                                            includeSaturday ).add(
+            "includeSunday", includeSunday ).toString();
     }
 
     public Iterator<LocalDate> iterator()
     {
-        return new DateRangeIterator( startDate, endDate, !includeMonday, !includeTuesday, !includeWednesday,
+        return new DateRangeIterator( endDate, startDate, !includeMonday, !includeTuesday, !includeWednesday,
                                       !includeThursday, !includeFriday, !includeSaturday, !includeSunday );
     }
 
@@ -208,7 +220,8 @@ public class DateRange
                                    boolean excludeSaturday, boolean excludeSunday )
         {
             this.end = end;
-            this.current = current;
+            this.current = findCurrent( end, current, excludeMonday, excludeTuesday, excludeWednesday, excludeThursday,
+                                        excludeFriday, excludeSaturday, excludeSunday );
             this.excludeMonday = excludeMonday;
             this.excludeTuesday = excludeTuesday;
             this.excludeWednesday = excludeWednesday;
@@ -216,6 +229,36 @@ public class DateRange
             this.excludeFriday = excludeFriday;
             this.excludeSaturday = excludeSaturday;
             this.excludeSunday = excludeSunday;
+        }
+
+        private LocalDate findCurrent( LocalDate end, LocalDate current, boolean excludeMonday, boolean excludeTuesday,
+                                       boolean excludeWednesday, boolean excludeThursday, boolean excludeFriday,
+                                       boolean excludeSaturday, boolean excludeSunday )
+        {
+            LocalDate ret = current;
+            boolean nextFound = false;
+            while ( !nextFound )
+            {
+                if ( ret.compareTo( end ) <= 0 && ( ret.getDayOfWeek() == DateTimeConstants.MONDAY && excludeMonday ||
+                    ret.getDayOfWeek() == DateTimeConstants.TUESDAY && excludeTuesday ||
+                    ret.getDayOfWeek() == DateTimeConstants.WEDNESDAY && excludeWednesday ||
+                    ret.getDayOfWeek() == DateTimeConstants.THURSDAY && excludeThursday ||
+                    ret.getDayOfWeek() == DateTimeConstants.FRIDAY && excludeFriday ||
+                    ret.getDayOfWeek() == DateTimeConstants.SATURDAY && excludeSaturday ||
+                    ret.getDayOfWeek() == DateTimeConstants.SUNDAY && excludeSunday ) )
+                {
+                    ret = current.plusDays( 1 );
+                }
+                else
+                {
+                    nextFound = true;
+                }
+            }
+            if ( ret.compareTo( end ) > 0 ) //iterator includes endDate
+            {
+                ret = null;
+            }
+            return ret;
         }
 
         public boolean hasNext()
@@ -230,32 +273,8 @@ public class DateRange
                 throw new NoSuchElementException();
             }
             LocalDate ret = current;
-            current = current.plusDays( 1 );
-            boolean nextFound = false;
-            while ( !nextFound )
-            {
-                if ( current.compareTo( end ) <= 0 && (
-                    current.getDayOfWeek() == DateTimeConstants.MONDAY && excludeMonday ||
-                        current.getDayOfWeek() == DateTimeConstants.TUESDAY && excludeTuesday ||
-                        current.getDayOfWeek() == DateTimeConstants.WEDNESDAY && excludeWednesday ||
-                        current.getDayOfWeek() == DateTimeConstants.THURSDAY && excludeThursday ||
-                        current.getDayOfWeek() == DateTimeConstants.FRIDAY && excludeFriday ||
-                        current.getDayOfWeek() == DateTimeConstants.SATURDAY && excludeSaturday ||
-                        current.getDayOfWeek() == DateTimeConstants.SUNDAY && excludeSunday ) )
-                {
-                    current = current.plusDays( 1 );
-                }
-                else
-                {
-                    nextFound = true;
-                }
-            }
-
-            if ( current.compareTo( end ) > 0 ) //iterator includes endDate
-            {
-                current = null;
-            }
-
+            current = findCurrent( end, current.plusDays( 1 ), excludeMonday, excludeTuesday, excludeWednesday,
+                                   excludeThursday, excludeFriday, excludeSaturday, excludeSunday );
             return ret;
         }
 

@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutorService;
  *
  * @author <a href="mailto:dautomne@toxeek.com">Dris Automne</a>
  */
-public abstract class NotifListener<T extends NotifRequest>
+public interface NotifListener<T extends NotifRequest>
 {
-    public abstract ListenableFuture<Void> run(  T notifRequest, ExecutorService executorService );
+    ListenableFuture<Void> run(  T notifRequest, ExecutorService executorService );
 }
